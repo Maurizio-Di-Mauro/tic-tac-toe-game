@@ -241,3 +241,62 @@ class Game:
                     self.current_state[i][j] = '.'
 
         return (min_value, x_coordinate, y_coordinate)
+
+
+    # This will create a loop that will allow us to play
+    def play_game(self):
+        # This is a game loop. It won't end
+        while True:
+            self.display_board()
+            self.result = self.is_end()
+
+            # Messages from the game
+            # if there is an outcome, then check the winner
+            if self.result != None:
+                if self.result == 'X':
+                    print("The winner is X!")
+                elif self.result == 'O':
+                    print("The winner is O!")
+                elif self.result == '.':
+                    print("It is a draw!")
+
+                self.initialize_game()
+                return
+
+            # If it is human's turn (for now human player is always 'X')
+            if self.player_turn == 'X':
+                # This loop runs until the player makes correct move
+                while True:
+                    # starting time of the process
+                    start_time = time.time()
+                    (min_value, x_coordinate, y_coordinate) = self.play_min()
+                    # ending time of 'thinking'
+                    end_time = time.time()
+                    # total evaluation time
+                    total_eval_time = round(end_time - start_time, 7)
+                    print('Evaluation time: {}s'.format(total_eval_time))
+                    print('Recommended move by AI: X = {}, Y = {}'.format(
+                                                  x_coordinate, y_coordinate))
+
+                    # human player's choice
+                    input_x = int(input('Insert the X coordinate: '))
+                    input_y = int(input('Insert the Y coordinate: '))
+
+                    if self.is_valid(input_x, input_y):
+                        self.current_state[input_x][input_y] = 'X'
+                        self.player_turn = 'O'
+                        break
+                    else:
+                        print('This is invalid move. Try again!')
+            # If it is AI move (Player 'O' move)
+            else:
+                (max_value, x_coordinate, y_coordinate) = self.play_max()
+                self.current_state[x_coordinate][y_coordinate] = 'O'
+                self.player_turn = 'X'
+
+
+
+
+if __name__ == '__main__':
+    game = Game()
+    game.play_game()
