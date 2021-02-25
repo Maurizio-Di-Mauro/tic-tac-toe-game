@@ -126,6 +126,25 @@ class Game:
         return '.'
 
 
+    def __calculate_resulting_values(self, result):
+        # If the game has came to an end, the function needs to return
+        # the evaluation function of the end.
+        # -1 - loss
+        # 0  - a tie
+        # 1  - win
+        if result == 'X':
+            return (-1, 0, 0)
+        elif result == 'O':
+            return (1, 0, 0)
+        elif result == '.':
+            return (0, 0, 0)
+        else:
+            # You can have None in result if the game is not finished. 
+            # In that case just pass
+            pass
+
+
+
     # The AI will play 'O' and will use the 'max' strategy
     def play_max(self) -> tuple:
 
@@ -142,21 +161,24 @@ class Game:
 
         result = self.is_end()
 
-        # If the game has came to an end, the function needs to return
-        # the evaluation function of the end.
-        # -1 - loss
-        # 0  - a tie
-        # 1  - win
-        if result == 'X':
-            return (-1, 0, 0)
-        elif result == 'O':
-            return (1, 0, 0)
-        elif result == '.':
-            return (0, 0, 0)
-        else:
-            # You can get None in self.is_end,
-            # if the game is not finished. In that case just continue
-            pass
+        if result is not None:
+            return self.__calculate_resulting_values(result)
+
+        # # If the game has came to an end, the function needs to return
+        # # the evaluation function of the end.
+        # # -1 - loss
+        # # 0  - a tie
+        # # 1  - win
+        # if result == 'X':
+        #     return (-1, 0, 0)
+        # elif result == 'O':
+        #     return (1, 0, 0)
+        # elif result == '.':
+        #     return (0, 0, 0)
+        # else:
+        #     # You can get None in self.is_end,
+        #     # if the game is not finished. In that case just continue
+        #     pass
 
         for i in range(3):
             for j in range(3):
@@ -202,21 +224,8 @@ class Game:
 
         result = self.is_end()
 
-        # If the game has came to an end, the function needs to return
-        # the evaluation function of the end.
-        # -1 - win
-        # 0  - a tie
-        # 1  - loss
-        if result == 'X':
-            return (-1, 0, 0)
-        elif result == 'O':
-            return (1, 0, 0)
-        elif result == '.':
-            return (0, 0, 0)
-        else:
-            # You can get None in self.is_end,
-            # if the game is not finished. In that case just continue
-            pass
+        if result is not None:
+            return self.__calculate_resulting_values(result)
 
         for i in range(3):
             for j in range(3):
@@ -295,8 +304,126 @@ class Game:
                 self.player_turn = 'X'
 
 
+    # Alpha: Best already explored option for player Max (O)
+    def max_alpha_beta(self, alpha, beta):
+        # worst possible situation
+        max_value = -2
+
+        x_coordinate = None
+        y_coordinate = None
+
+        result = self.is_end()
+
+        if result is not None:
+            return self.__calculate_resulting_values(result)
+
+        for i in range(3):
+            for j in range(3):
+                if self.current_state[i][j] == '.':
+                    self.current_state[i][j] = 'O'
+                    min_value, min_i, min_j = self.min_alpha_beta(alpha, beta)
+                    if max_value < min_value:
+                        max_value = min_value
+                        x_coordinate = i
+                        y_coordinate = j
+                    self.current_state[i][j] = '.'
+                    # The next two if statements
+                    # are the only difference between max_play and alpha
+                    if max_value >= beta:
+                        return (max_value, x_coordinate, y_coordinate)
+                    if max_value > alpha:
+                        alpha = max_value
+
+        return (max_value, x_coordinate, y_coordinate)
+
+
+    # Beta: Best already explored option for player Min (X)
+    def min_alpha_beta(self, alpha, beta):
+        # worst possible situation
+        min_value = 2
+
+        x_coordinate = None
+        y_coordinate = None
+
+        result = self.is_end()
+
+        if result is not None:
+            return self.__calculate_resulting_values(result)
+
+        for i in range(3):
+            for j in range(3):
+                if self.current_state[i][j] == '.':
+                    self.current_state[i][j] = 'X'
+                    max_value, max_i, max_j = self.max_alpha_beta(alpha, beta)
+                    if min_value > max_value:
+                        min_value = max_value
+                        x_coordinate = i
+                        y_coordinate = j
+                    self.current_state[i][j] = '.'
+                    # The next two if statements
+                    # are the only difference between max_play and alpha
+                    if min_value <= alpha:
+                        return (min_value, x_coordinate, y_coordinate)
+                    if min_value < beta:
+                        beta = min_value
+
+        return (min_value, x_coordinate, y_coordinate)
+
+
+    def play_alpha_beta_game(self):
+        while True:
+            self.display_board()
+            self.result = self.is_end()
+
+            if self.result != None:
+                if self.result == 'X':
+                    print("The winner is X!")
+                elif self.result == 'O':
+                    print("The winner is O!")
+                elif self.result == '.':
+                    print("It is a draw!")
+
+                self.initialize_game()
+                return
+
+            if self.player_turn == 'X':
+                # This loop runs until the player makes correct move
+                while True:
+                    # starting time of the process
+                    start_time = time.time()
+                    min_value, x_coordinate, y_coordinate = \
+                                                    self.min_alpha_beta(-2, 2)
+                    # ending time of 'thinking'
+                    end_time = time.time()
+                    # total evaluation time
+                    total_eval_time = round(end_time - start_time, 7)
+                    print('Evaluation time: {}s'.format(total_eval_time))
+                    print('Recommended move by AI: X = {}, Y = {}'.format(
+                                                  x_coordinate, y_coordinate))
+
+                    # human player's choice
+                    input_x = int(input('Insert the X coordinate: '))
+                    input_y = int(input('Insert the Y coordinate: '))
+
+                    if self.is_valid(input_x, input_y):
+                        self.current_state[input_x][input_y] = 'X'
+                        self.player_turn = 'O'
+                        break
+                    else:
+                        print('This is invalid move. Try again!')
+            # player 'O' move
+            else:
+                max_value, x_coordinate, y_coordinate = \
+                                                    self.max_alpha_beta(-2, 2)
+                print(max_value)
+                print(x_coordinate, y_coordinate)
+                self.current_state[x_coordinate][y_coordinate] = 'O'
+                self.player_turn = 'X'
+                
+
 
 
 if __name__ == '__main__':
     game = Game()
-    game.play_game()
+    # game.play_game()
+    game.play_alpha_beta_game()
